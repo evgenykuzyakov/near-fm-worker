@@ -253,12 +253,12 @@ const corsHeaders = {
 
 export default {
 	async fetch(request, env, ctx) {
-		const incrementRedirect = async (accountId, path) => {
-			const id = env.COUNTER.idFromName(`${accountId}/${path}`);
+		const incrementRedirect = async (accountId) => {
+			const id = env.COUNTER.idFromName(accountId);
 			const obj = env.COUNTER.get(id);
 			let resp = await obj.fetch(request.url);
 			let count = await resp.text();
-			console.log('Num redirects', accountId, path, count);
+			console.log('Num redirects', request.url, count);
 		};
 
 		if (request.method === 'OPTIONS') {
@@ -320,9 +320,11 @@ export class Counter {
 	}
 
 	async fetch(request) {
-		let value = (await this.state.storage.get('value')) || 0;
+		const url = new URL(request.url);
+		const path = url.pathname.slice(1);
+		let value = (await this.state.storage.get(path)) || 0;
 		++value;
-		await this.state.storage.put('value', value);
+		await this.state.storage.put(path, value);
 		return new Response(value);
 	}
 }
