@@ -61,7 +61,7 @@ async function socialGet(keys, blockHeight, parse) {
 
 class WidgetDataInjector {
 	constructor({ widget, props, extraScript }) {
-		this.widget = widget.replace(/[^\w\.\/]/g, '');
+		this.widget = widget.replace(/[^-.\w\/]/g, '');
 		this.props = props || {};
 		this.extraScript = extraScript || '';
 	}
@@ -168,7 +168,7 @@ async function renderWidget(data) {
 }
 
 async function loadData(accountId, path) {
-	path = path.replace(/[^\w]/g, '');
+	path = path.replace(/[^-\w]/g, '');
 	const [premiumTime, redirectData] = await Promise.all([
 		socialGet(`${PremiumAccountId}/badge/premium/accounts/${accountId}`, undefined, true),
 		socialGet(`${accountId}/custom/fm/${path}`, undefined, true),
