@@ -1,10 +1,10 @@
 const OurDomain = '.near.fm';
-// const NearSocialDomain = "near.social";
-const NearSocialDomain = 'inject-props.viewer-xlt.pages.dev';
+const NearSocialDomain = 'near.social';
 const DefaultWidget = 'mob.near/widget/Near.FM.Remote';
 const PremiumAccountId = 'premium.social.near';
 const NonPremiumRedirectWidget = 'mob.near/widget/Near.FM.Remote.NonPremium';
 const MissingRedirectWidget = 'mob.near/widget/Near.FM.Remote.Missing';
+const FaviconUrl = 'https://near.social/nearfm.png';
 
 const Title = 'URL Shortener - Near Freaking Magic';
 const Description = 'The best premium URL Shortener for NEAR accounts';
@@ -13,6 +13,7 @@ const RedirectTemplate = `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
+  <link rel="icon" href="/favicon.png" />
   <meta name="twitter:card" content="summary_large_image" />
   <meta property="og:title" content="" />
   <meta property="og:description" content="" />
@@ -270,7 +271,11 @@ export default {
 		if (url.hostname === OurDomain.slice(1)) {
 			if (url.pathname === '/api/og') {
 				return fetchOgMetadata(url.searchParams.get('url'));
-			} else if (url.pathname.includes('.') || url.pathname.includes('/', 1)) {
+			}
+			if (url.pathname === '/favicon.png') {
+				return Response.redirect(FaviconUrl, 302);
+			}
+			if (url.pathname.includes('.') || url.pathname.includes('/', 1)) {
 				url.hostname = NearSocialDomain;
 				return Response.redirect(url.toString(), 302);
 			}
