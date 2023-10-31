@@ -8,6 +8,7 @@ const FaviconUrl = 'https://near.social/nearfm.png';
 
 const Title = 'URL Shortener - Near Freaking Magic';
 const Description = 'The best premium URL Shortener for NEAR accounts';
+const PersonalDescription = 'Your personal premium URL Shortener for NEAR';
 
 const RedirectTemplate = `<!DOCTYPE html>
 <html lang="en">
@@ -75,6 +76,18 @@ class WidgetDataInjector {
 				html: true,
 			}
 		);
+	}
+}
+
+class FaviconInjector {
+	constructor({ favicon }) {
+		this.favicon = favicon;
+	}
+
+	element(element) {
+		if (this.favicon) {
+			element.setAttribute('href', this.favicon);
+		}
 	}
 }
 
@@ -157,6 +170,7 @@ class ScriptRedirectInjector {
 async function renderWidget(data) {
 	const remoteUrl = `https://${NearSocialDomain}`;
 	return new HTMLRewriter()
+		.on('link[rel="icon"]', new FaviconInjector(data))
 		.on('head', new WidgetDataInjector(data))
 		.on('meta[property="og:title"]', new MetaTitleInjector(data))
 		.on('meta[property="og:image"]', new MetaImageInjector(data))
@@ -253,10 +267,14 @@ const corsHeaders = {
 
 export default {
 	async fetch(request, env, ctx) {
-		const incrementRedirect = async (accountId) => {
+		const makeCounter = (accountId) => {
 			const id = env.COUNTER.idFromName(accountId);
-			const obj = env.COUNTER.get(id);
-			let resp = await obj.fetch(request.url);
+			return env.COUNTER.get(id);
+		};
+
+		const incrementRedirect = async (accountId) => {
+			const counter = makeCounter(accountId);
+			let resp = await counter.fetch(request.url);
 			let count = await resp.text();
 			console.log('Num redirects', request.url, count);
 		};
@@ -272,6 +290,12 @@ export default {
 			if (url.pathname === '/api/og') {
 				return fetchOgMetadata(url.searchParams.get('url'));
 			}
+			// if (url.pathname === '/api/count') {
+			// 	const accountId = url.searchParams.get('accountId');
+			// 	const counter = makeCounter(accountId);
+			// 	let resp = await counter.fetch(request.url);
+			// 	return fetchOgMetadata(url.searchParams.get('url'));
+			// }
 			if (url.pathname === '/favicon.png') {
 				return Response.redirect(FaviconUrl, 302);
 			}
@@ -280,7 +304,14 @@ export default {
 				return Response.redirect(url.toString(), 302);
 			}
 			// Display shortener widget without accountId
-			return renderWidget({ widget: DefaultWidget, props: {}, title: Title, description: Description });
+			return renderWidget({
+				widget: DefaultWidget,
+				props: {},
+				title: Title,
+				description: Description,
+				image: FaviconUrl,
+				favicon: FaviconUrl,
+			});
 		}
 		if (!url.hostname.endsWith(OurDomain)) {
 			return new Response(null, {
@@ -288,9 +319,17 @@ export default {
 			});
 		}
 		const accountId = url.hostname.slice(0, url.hostname.length - OurDomain.length) + '.near';
+		const favicon = `https://i.near.social/magic/thumbnail/https://near.social/magic/img/account/${accountId}`;
 		if (url.pathname === '/') {
 			// Display shortener widget
-			return renderWidget({ widget: DefaultWidget, props: { accountId } });
+			return renderWidget({
+				widget: DefaultWidget,
+				props: { accountId },
+				title: Title,
+				description: PersonalDescription,
+				image: FaviconUrl,
+				favicon,
+			});
 		} else if (url.pathname.includes('.') || url.pathname.includes('/', 1)) {
 			url.hostname = NearSocialDomain;
 			return Response.redirect(url.toString(), 302);
@@ -303,13 +342,20 @@ export default {
 				await incrementRedirect(accountId, path);
 				return renderRedirectPage(redirectData);
 			} else if (premiumTime) {
-				return renderWidget({ widget: NonPremiumRedirectWidget, props: { accountId, redirectData } });
+				return renderWidget({ widget: NonPremiumRedirectWidget, props: { accountId, redirectData }, favicon });
 			} else {
 				// Never been premium
-				return renderWidget({ widget: DefaultWidget, props: { accountId, path } });
+				return renderWidget({
+					widget: DefaultWidget,
+					props: { accountId, path },
+					title: Title,
+					description: PersonalDescription,
+					image: FaviconUrl,
+					favicon,
+				});
 			}
 		} else {
-			return renderWidget({ widget: MissingRedirectWidget, props: { accountId, path } });
+			return renderWidget({ widget: MissingRedirectWidget, props: { accountId, path }, favicon });
 		}
 	},
 };
