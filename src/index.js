@@ -163,7 +163,7 @@ class ScriptRedirectInjector {
 	}
 
 	element(element) {
-		element.setInnerContent(`window.location.replace("${encodeURI(this.url)}")`, { html: true });
+		element.setInnerContent(`window.location.replace(${JSON.stringify(this.url.toString())})`, { html: true });
 	}
 }
 
