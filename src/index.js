@@ -163,7 +163,7 @@ class ScriptRedirectInjector {
 	}
 
 	element(element) {
-		element.setInnerContent(`window.location.replace("${encodeURI(this.url)}")`);
+		element.setInnerContent(`window.location.replace("${encodeURI(this.url)}")`, { html: true });
 	}
 }
 
@@ -193,6 +193,7 @@ async function loadData(accountId, path) {
 
 function renderRedirectPage(redirectData) {
 	return new HTMLRewriter()
+		.on('link[rel="icon"]', new FaviconInjector(redirectData))
 		.on('meta[property="og:title"]', new MetaTitleInjector(redirectData))
 		.on('meta[property="og:image"]', new MetaImageInjector(redirectData))
 		.on('meta[name="twitter:card"]', new MetaTwitterCardInjector(redirectData))
@@ -340,7 +341,7 @@ export default {
 		if (redirectData?.url) {
 			if (isPremium) {
 				await incrementRedirect(accountId, path);
-				return renderRedirectPage(redirectData);
+				return renderRedirectPage(Object.assign(redirectData, { favicon }));
 			} else if (premiumTime) {
 				return renderWidget({ widget: NonPremiumRedirectWidget, props: { accountId, redirectData }, favicon });
 			} else {
